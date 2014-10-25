@@ -3,6 +3,8 @@
 
 Filebase is a simple library that stores data in JSON files. It is suitable for small projects that do not require a full-fledged database.
 
+**The library is not ready for production yet. The main reason for this is lack of thread safety.**
+
 ##API
 ###FilebaseContext
 ####FilebaseContext(string rootPath)
