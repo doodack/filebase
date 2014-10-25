@@ -33,28 +33,28 @@ namespace Tests
 		}
 
 		[Test]
-		public async void GetAll_when_file_doesnt_exist_should_return_empty_collection()
+		public async void GetAllAsync_when_file_doesnt_exist_should_return_empty_collection()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
 
-			IEnumerable<Entity> results = await dataset.GetAll();
+			IEnumerable<Entity> results = await dataset.GetAllAsync();
 			Assert.AreEqual(0, results.Count());
 		}
 
 		[Test]
-		public async void GetAll_when_empty_file_exists_should_return_empty_collection()
+		public async void GetAllAsync_when_empty_file_exists_should_return_empty_collection()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
 			this.SetupFile(string.Empty);
 
-			IEnumerable<Entity> results = await dataset.GetAll();
+			IEnumerable<Entity> results = await dataset.GetAllAsync();
 			Assert.AreEqual(0, results.Count());
 		}
 
 		[Test]
-		public async void GetAll_when_file_exists_and_have_two_flat_objects_should_return_collection_with_this_objects()
+		public async void GetAllAsync_when_file_exists_and_have_two_flat_objects_should_return_collection_with_this_objects()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -64,7 +64,7 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			IEnumerable<Entity> results = await dataset.GetAll();
+			IEnumerable<Entity> results = await dataset.GetAllAsync();
 			Assert.AreEqual(2, results.Count());
 
 			var result1 = results.First();
@@ -79,17 +79,17 @@ namespace Tests
 		}
 
 		[Test]
-		public async void GetById_when_file_doesnt_exist_should_return_null()
+		public async void GetByIdAsync_when_file_doesnt_exist_should_return_null()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
 
-			Entity result = await dataset.GetById("0");
+			Entity result = await dataset.GetByIdAsync("0");
 			Assert.IsNull(result);
 		}
 
 		[Test]
-		public async void GetById_when_record_doesnt_exist_should_return_null()
+		public async void GetByIdAsync_when_record_doesnt_exist_should_return_null()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -99,12 +99,12 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			Entity result = await dataset.GetById("nonexistent");
+			Entity result = await dataset.GetByIdAsync("nonexistent");
 			Assert.IsNull(result);
 		}
 
 		[Test]
-		public async void GetById_when_flat_record_exists_should_return_it()
+		public async void GetByIdAsync_when_flat_record_exists_should_return_it()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -114,14 +114,14 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			Entity result = await dataset.GetById("two");
+			Entity result = await dataset.GetByIdAsync("two");
 			Assert.AreEqual("two", result.Id);
 			Assert.AreEqual(2, result.IntProp);
 			Assert.IsNull(result.CompoundProp);
 		}
 		
 		[Test]
-		public async void GetById_when_compound_record_exists_should_return_it()
+		public async void GetByIdAsync_when_compound_record_exists_should_return_it()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -135,7 +135,7 @@ namespace Tests
 					IntProp = 2 }
 			});
 
-			Entity result = await dataset.GetById("two");
+			Entity result = await dataset.GetByIdAsync("two");
 			Assert.AreEqual("two", result.Id);
 			Assert.AreEqual(2, result.IntProp);
 			Assert.AreEqual("two-one", result.CompoundProp.Id);
@@ -144,18 +144,18 @@ namespace Tests
 		}
 
 		[Test]
-		public async void AddOrUpdate_when_file_doesnt_exist_should_create_it()
+		public async void AddOrUpdateAsync_when_file_doesnt_exist_should_create_it()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
 
-			await dataset.AddOrUpdate(new Entity { Id = "one", IntProp = 1 });
+			await dataset.AddOrUpdateAsync(new Entity { Id = "one", IntProp = 1 });
 			var fileInfo = new FileInfo(Path.Combine(rootPath, "entities.json"));
 			Assert.IsTrue(fileInfo.Exists);
 		}
 
 		[Test]
-		public async void AddOrUpdate_when_record_doesnt_exist_should_create_it()
+		public async void AddOrUpdateAsync_when_record_doesnt_exist_should_create_it()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -164,16 +164,16 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 			});
 
-			await dataset.AddOrUpdate(new Entity { Id = "new", IntProp = 42 });
-			var result = await dataset.GetById("new");
-			Assert.AreEqual(2, (await dataset.GetAll()).Count());
+			await dataset.AddOrUpdateAsync(new Entity { Id = "new", IntProp = 42 });
+			var result = await dataset.GetByIdAsync("new");
+			Assert.AreEqual(2, (await dataset.GetAllAsync()).Count());
 			Assert.AreEqual("new", result.Id);
 			Assert.AreEqual(42, result.IntProp);
 			Assert.IsNull(result.CompoundProp);
 		}
 
 		[Test]
-		public async void AddOrUpdate_when_record_exists_should_change_it()
+		public async void AddOrUpdateAsync_when_record_exists_should_change_it()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -182,16 +182,16 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 			});
 
-			await dataset.AddOrUpdate(new Entity { Id = "one", IntProp = 111 });
-			var result = await dataset.GetById("one");
-			Assert.AreEqual(1, (await dataset.GetAll()).Count());
+			await dataset.AddOrUpdateAsync(new Entity { Id = "one", IntProp = 111 });
+			var result = await dataset.GetByIdAsync("one");
+			Assert.AreEqual(1, (await dataset.GetAllAsync()).Count());
 			Assert.AreEqual("one", result.Id);
 			Assert.AreEqual(111, result.IntProp);
 			Assert.IsNull(result.CompoundProp);
 		}
 
 		[Test]
-		public async void Delete_when_two_items_exist_should_delete_one()
+		public async void DeleteAsync_when_two_items_exist_should_delete_one()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -201,15 +201,15 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			await dataset.Delete("one");
+			await dataset.DeleteAsync("one");
 
-			Assert.AreEqual(1, (await dataset.GetAll()).Count());
-			var remaining = await dataset.GetById("two");
+			Assert.AreEqual(1, (await dataset.GetAllAsync()).Count());
+			var remaining = await dataset.GetByIdAsync("two");
 			Assert.IsNotNull(remaining);
 		}
 
 		[Test]
-		public async void Delete_when_one_item_exists_should_delete_the_whole_file()
+		public async void DeleteAsync_when_one_item_exists_should_delete_the_whole_file()
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
@@ -218,9 +218,9 @@ namespace Tests
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 }
 			});
 
-			await dataset.Delete("one");
+			await dataset.DeleteAsync("one");
 
-			Assert.AreEqual(0, (await dataset.GetAll()).Count());
+			Assert.AreEqual(0, (await dataset.GetAllAsync()).Count());
 
 			var fileInfo = new FileInfo(Path.Combine(rootPath, "entities.json"));
 			Assert.IsFalse(fileInfo.Exists);

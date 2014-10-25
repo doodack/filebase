@@ -30,7 +30,7 @@ namespace Filebase
 			this._backingFilePath = Path.Combine(context.RootDirectory.FullName, name + ".json");
 		}
 
-		public async Task<IEnumerable<T>> GetAll()
+		public async Task<IEnumerable<T>> GetAllAsync()
 		{
 			if (!this.BackingFile.Exists)
 			{
@@ -46,7 +46,7 @@ namespace Filebase
 			}
 		}
 
-		public async Task<T> GetById(string id)
+		public async Task<T> GetByIdAsync(string id)
 		{
 			if (!this.BackingFile.Exists)
 			{
@@ -63,7 +63,7 @@ namespace Filebase
 			}
 		}
 
-		public async Task AddOrUpdate(T record)
+		public async Task AddOrUpdateAsync(T record)
 		{
 			IDictionary<string, T> records;
 			if (this.BackingFile.Exists)
@@ -98,7 +98,7 @@ namespace Filebase
 			}
 		}
 
-		public async Task Delete(string id)
+		public async Task DeleteAsync(string id)
 		{
 			if (!this.BackingFile.Exists)
 			{
