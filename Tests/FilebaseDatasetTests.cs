@@ -47,7 +47,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(string.Empty);
+			SetupFile(string.Empty);
 
 			IEnumerable<Entity> results = await dataset.GetAllAsync();
 			Assert.AreEqual(0, results.Count());
@@ -58,7 +58,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
@@ -93,7 +93,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
@@ -108,7 +108,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
@@ -125,7 +125,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 				new Entity 
@@ -159,7 +159,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 			});
@@ -177,7 +177,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 			});
@@ -195,7 +195,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 },
 				new Entity { CompoundProp = null, Id = "two", IntProp = 2 }
@@ -213,7 +213,7 @@ namespace Tests
 		{
 			FilebaseContext ctx = new FilebaseContext(rootPath);
 			FilebaseDataset<Entity> dataset = new FilebaseDataset<Entity>("entities", ctx, e => e.Id);
-			this.SetupFile(new[] 
+			SetupFile(new[] 
 			{ 
 				new Entity { CompoundProp = null, Id = "one", IntProp = 1 }
 			});
