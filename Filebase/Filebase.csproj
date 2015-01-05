@@ -41,6 +41,10 @@
   <ItemGroup>
     <Compile Include="FilebaseContext.cs" />
     <Compile Include="FilebaseDataset.cs" />
+    <Compile Include="FileStorageProvider.cs" />
+    <Compile Include="IFileStorageProvider.cs" />
+    <Compile Include="IRecordCache.cs" />
+    <Compile Include="LocalRecordCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
