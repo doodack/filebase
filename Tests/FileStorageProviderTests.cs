@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -232,7 +233,6 @@ namespace Filebase.Tests
 		#endregion
 
 		[Test]
-		[Ignore]
 		public async void WriteFileAsync_when_read_is_in_progress_should_wait()
 		{
 			var records = new[]
@@ -245,16 +245,17 @@ namespace Filebase.Tests
 
 			var recordsDict = records.ToDictionary(r => r.Id);
 
-			var t1 = fileStorageProvider.ReadFileAsync();
-			var t2 = fileStorageProvider.WriteFileAsync(recordsDict);
+			var t1 = fileStorageProvider.ReadFileAsync().ContinueWith(_ => Debug.WriteLine("t1 completed"));
+			var t2 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t2 completed"));
+			var t3 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t3 completed"));
+			var t4 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t4 completed"));
 
-			await Task.WhenAll(t1, t2);
+			await Task.WhenAll(t1, t2, t3, t4);
 
 			Assert.Pass();
 		}
 
 		[Test]
-		[Ignore]
 		public async void WriteFile_when_read_is_in_progress_should_wait()
 		{
 			var records = new[]
@@ -267,8 +268,10 @@ namespace Filebase.Tests
 
 			var recordsDict = records.ToDictionary(r => r.Id);
 
-			var t1 = HoldFileOpen(FileAccess.Read, FileShare.Read);
-			var t2 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict));
+			var t1 = HoldFileOpen(FileAccess.Read, FileShare.Read).ContinueWith(_ => Debug.WriteLine("t1 completed"));
+			var t2 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t2 completed"));
+			var t3 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t3 completed"));
+			var t4 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t4 completed"));
 
 			await Task.WhenAll(t1, t2);
 

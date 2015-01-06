@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 using Newtonsoft.Json;
@@ -10,6 +11,10 @@ namespace Filebase
 {
 	internal class FileStorageProvider<T> : IFileStorageProvider<T>
 	{
+		private static readonly TimeSpan FileAccessTimeout = TimeSpan.FromSeconds(30);
+
+		private static readonly TimeSpan LockedFileRetryInterval = TimeSpan.FromMilliseconds(50);
+
 		private readonly FileInfo _backingFile;
 
 		public FileStorageProvider(FileInfo backingFile)
@@ -17,62 +22,56 @@ namespace Filebase
 			_backingFile = backingFile;
 		}
 
+		private bool BackingFileExists
+		{
+			get
+			{
+				_backingFile.Refresh();
+				return _backingFile.Exists;
+			}
+		}
+
 		public IDictionary<string, T> ReadFile()
 		{
-			string json;
-			
 			if (!BackingFileExists)
 			{
 				return new Dictionary<string, T>();
 			}
 
-			using (var reader = _backingFile.OpenText())
+			string json;
+			using (var reader = OpenStreamReader())
 			{
 				json = reader.ReadToEnd();
 			}
-			
-			var records = JsonConvert.DeserializeObject<Dictionary<string, T>>(json);
-			if (records == null)
-			{
-				return new Dictionary<string, T>();
-			}
 
-			return records;
+			return DeserializeRecords(json);
 		}
 
 		public async Task<IDictionary<string, T>> ReadFileAsync()
 		{
-			string json;
 			if (!BackingFileExists)
 			{
 				return new Dictionary<string, T>();
 			}
 
-			using (var reader = _backingFile.OpenText())
+			string json;
+			using (var reader = await OpenStreamReaderAsync())
 			{
 				json = await reader.ReadToEndAsync();
 			}
 
-			var records = JsonConvert.DeserializeObject<Dictionary<string, T>>(json);
-			if (records == null)
-			{
-				return new Dictionary<string, T>();
-			}
-
-			return records;
+			return DeserializeRecords(json);
 		}
 
 		public void WriteFile(IDictionary<string, T> records)
 		{
-			if (!records.Any() && BackingFileExists)
+			var newJson = PrepareDataToWrite(records);
+			if (newJson == null)
 			{
-				_backingFile.Delete();
 				return;
 			}
 
-			var newJson = JsonConvert.SerializeObject(records, Formatting.Indented);
-			using (var fs = _backingFile.Open(FileMode.Create))
-			using (var writer = new StreamWriter(fs))
+			using (var writer = OpenStreamWriter())
 			{
 				writer.Write(newJson);
 			}
@@ -80,27 +79,118 @@ namespace Filebase
 
 		public async Task WriteFileAsync(IDictionary<string, T> records)
 		{
-			if (!records.Any() && BackingFileExists)
+			var newJson = PrepareDataToWrite(records);
+			if (newJson == null)
 			{
-				_backingFile.Delete();
 				return;
 			}
 
-			var newJson = JsonConvert.SerializeObject(records, Formatting.Indented);
-			using (var fs = _backingFile.Open(FileMode.Create))
-			using (var writer = new StreamWriter(fs))
+			using (var writer = await OpenStreamWriterAsync())
 			{
 				await writer.WriteAsync(newJson);
 			}
 		}
 
-		private bool BackingFileExists 
-		{ 
-			get
+		private string PrepareDataToWrite(IDictionary<string, T> records)
+		{
+			if (!records.Any() && BackingFileExists)
 			{
-				_backingFile.Refresh();
-				return _backingFile.Exists;
+				_backingFile.Delete();
+				return null;
 			}
+
+			return JsonConvert.SerializeObject(records, Formatting.Indented);
+		}
+
+		private async Task<StreamReader> OpenStreamReaderAsync()
+		{
+			var fs = await OpenFileAsync(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+			return new StreamReader(fs);
+		}
+
+		private StreamReader OpenStreamReader()
+		{
+			var fs = OpenFile(FileMode.OpenOrCreate, FileAccess.Read, FileShare.Read);
+			return new StreamReader(fs);
+		}
+
+		private StreamWriter OpenStreamWriter()
+		{
+			var fs = OpenFile(FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+			return new StreamWriter(fs);
+		}
+
+		private async Task<StreamWriter> OpenStreamWriterAsync()
+		{
+			var fs = await OpenFileAsync(FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+			return new StreamWriter(fs);
+		}
+
+		private static IDictionary<string, T> DeserializeRecords(string json)
+		{
+			var records = JsonConvert.DeserializeObject<Dictionary<string, T>>(json);
+			if (records == null)
+			{
+				return new Dictionary<string, T>();
+			}
+
+			return records;
+		}
+
+		private FileStream OpenFile(FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
+		{
+			var firstTryTime = DateTime.Now;
+			while (true)
+			{
+				try
+				{
+					var fs = _backingFile.Open(fileMode, fileAccess, fileShare);
+					return fs;
+				}
+				catch (IOException ioex)
+				{
+					if (!IsFileLocked(ioex) || IsTimeoutExceeded(firstTryTime))
+					{
+						throw;
+					}
+				}
+
+				Thread.Sleep(LockedFileRetryInterval);
+			}
+		}
+
+		private async Task<FileStream> OpenFileAsync(FileMode fileMode, FileAccess fileAccess, FileShare fileShare)
+		{
+			var firstTryTime = DateTime.Now;
+			while (true)
+			{
+				try
+				{
+					var fs = _backingFile.Open(fileMode, fileAccess, fileShare);
+					return fs;
+				}
+				catch (IOException ioex)
+				{
+					if (!IsFileLocked(ioex) || IsTimeoutExceeded(firstTryTime))
+					{
+						throw;
+					}
+				}
+
+				await Task.Delay(LockedFileRetryInterval);
+			}
+		}
+
+		private static bool IsFileLocked(IOException exception)
+		{
+			const int FileLockedErrorCode = -2147024864;
+
+			return exception.HResult == FileLockedErrorCode;
+		}
+
+		private static bool IsTimeoutExceeded(DateTime startTime)
+		{
+			return DateTime.Now - startTime >= FileAccessTimeout;
 		}
 	}
 }

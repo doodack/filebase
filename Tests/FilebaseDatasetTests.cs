@@ -7,6 +7,4 @@ using NUnit.Framework;
 
 namespace Filebase.Tests
 {
-	
-	
 }
