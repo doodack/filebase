@@ -3,8 +3,6 @@
 
 Filebase is a simple library that stores data in JSON files. It is suitable for small projects that do not require a full-fledged database.
 
-**The library is not ready for production yet. The main reason for this is lack of thread safety.**
-
 ##API
 ###FilebaseContext
 ####FilebaseContext(string rootPath)
@@ -28,3 +26,37 @@ Note that it is a client's responsibility to assign an id (i.e. there is no auto
 
 ####Delete(string id) / DeleteAsync(string id)
 Deletes a record with a given id.
+
+####bool IsVolatile
+Gets or sets a value indicating whether data is the corresponding file is volatile (i.e. can be modified by means other than `FilebaseDataset`.
+If it is, a file will be opened and read each time a read operation is performed. Otherwise, data will be cached locally.
+
+##Usage
+This section presents the current recommended way of using Filebase. It is likely to change before the library hits the stable stage.
+
+1. Create a class deriving from `FilebaseContext`:
+
+		class MyContext : FilebaseContext
+		{
+			public MyContext() : base("path\\to\\data\\folder") { }
+		}
+
+2. Create and initialize a property in your context for each data set you'd like to use
+
+		class MyContext : FilebaseContext
+		{
+			public MyContext() : base("path\\to\\data\\folder")
+			{
+				Foos = new FilebaseDataset<Foo>("foo", this, f => f.FooId);
+				Bars = new FilebaseDataset<Bar>("bar", this, f => f.BarId);
+			}
+			
+			public FilebaseDataset<Foo> Foos { get; private set; }
+			
+			public FilebaseDataset<Bar> Bars { get; private set; }
+		}
+
+3. Instantiate or inject the context into your code and you're set!
+
+		var context = new MyContext();
+		var foos = context.Foos.GetAll();
