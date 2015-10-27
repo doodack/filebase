@@ -9,7 +9,7 @@ namespace Filebase
 
 		public FilebaseContext(string rootPath)
 		{
-			DirectoryInfo rootDirectory = new DirectoryInfo(rootPath);
+			var rootDirectory = new DirectoryInfo(rootPath);
 			if (!rootDirectory.Exists)
 			{
 				rootDirectory.Create();

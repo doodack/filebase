@@ -75,7 +75,7 @@ namespace Filebase.Tests
 		}
 
 		[Test]
-		public void ReadFile_when_file_exists_and_have_two_flat_objects_should_return_collection_with_this_objects()
+		public void ReadFile_when_file_exists_and_have_two_flat_objects_should_return_collection_with_these_objects()
 		{
 			SetupFile(new[] 
 			{ 
@@ -101,7 +101,7 @@ namespace Filebase.Tests
 		}
 
 		[Test]
-		public async void ReadFileAsync_when_file_exists_and_have_two_flat_objects_should_return_collection_with_this_objects()
+		public async void ReadFileAsync_when_file_exists_and_have_two_flat_objects_should_return_collection_with_these_objects()
 		{
 			SetupFile(new[] 
 			{ 

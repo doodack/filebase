@@ -29,8 +29,6 @@ namespace Filebase
 
 			var backingFilePath = Path.Combine(context.RootDirectory.FullName, name + ".json");
 			FileStorageProvider = new FileStorageProvider<T>(new FileInfo(backingFilePath));
-			
-			IsVolatile = true;
 		}
 
 		/// <summary>
@@ -38,7 +36,7 @@ namespace Filebase
 		/// If it is, a file will be opened and read each time a read operation is performed. 
 		/// Otherwise, data will be cached locally.
 		/// </summary>
-		public bool IsVolatile { get; set; }
+		public bool IsVolatile { get; set; } = true;
 
 		internal IFileStorageProvider<T> FileStorageProvider { get; set; }
 
@@ -48,7 +46,7 @@ namespace Filebase
 		public IEnumerable<T> GetAll()
 		{
 			var records = GetRecords();
-			return records != null ? records.Values : Enumerable.Empty<T>();
+			return records?.Values ?? Enumerable.Empty<T>();
 		}
 
 		/// <summary>
@@ -57,7 +55,7 @@ namespace Filebase
 		public async Task<IEnumerable<T>> GetAllAsync()
 		{
 			var records = await GetRecordsAsync();
-			return records != null ? records.Values : Enumerable.Empty<T>();
+			return records?.Values ?? Enumerable.Empty<T>();
 		}
 
 		/// <summary>
