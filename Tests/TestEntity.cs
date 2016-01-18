@@ -1,6 +1,6 @@
 namespace Filebase.Tests
 {
-	internal class TestEntity
+	public class TestEntity
 	{
 		public string Id { get; set; }
 

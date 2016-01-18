@@ -39,10 +39,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="FilebaseContext.cs" />
-    <Compile Include="FilebaseDataset.cs" />
+    <Compile Include="Dataset.cs" />
+    <Compile Include="DatasetFactory.cs" />
     <Compile Include="FileStorageProvider.cs" />
-    <Compile Include="IFileStorageProvider.cs" />
+    <Compile Include="IPersistentStorageProvider.cs" />
     <Compile Include="IRecordCache.cs" />
     <Compile Include="LocalRecordCache.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

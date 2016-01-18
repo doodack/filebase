@@ -13,8 +13,8 @@ namespace Filebase.Tests
 {
 	public class FileStorageProviderTests
 	{
-		private readonly static string rootPath = Path.Combine(Directory.GetCurrentDirectory(), "TestData\\");
-		private readonly static string filePath = Path.Combine(rootPath, "test.json");
+		private static readonly string rootPath = Path.Combine(Directory.GetCurrentDirectory(), "TestData\\");
+		private static readonly string filePath = Path.Combine(rootPath, "test.json");
 
 		private readonly FileStorageProvider<TestEntity> fileStorageProvider = new FileStorageProvider<TestEntity>(new FileInfo(filePath));
 
@@ -40,19 +40,19 @@ namespace Filebase.Tests
 			}
 		}
 
-		#region ReadFile tests
+		#region ReadEntities tests
 
 		[Test]
 		public void ReadFile_when_file_doesnt_exist_should_return_empty_collection()
 		{
-			var results = fileStorageProvider.ReadFile();
+			var results = fileStorageProvider.ReadEntities();
 			Assert.AreEqual(0, results.Count());
 		}
 
 		[Test]
 		public async void ReadFileAsync_when_file_doesnt_exist_should_return_empty_collection()
 		{
-			var results = await fileStorageProvider.ReadFileAsync();
+			var results = await fileStorageProvider.ReadEntitiesAsync();
 			Assert.AreEqual(0, results.Count());
 		}
 
@@ -61,7 +61,7 @@ namespace Filebase.Tests
 		{
 			SetupFile(string.Empty);
 
-			var results = fileStorageProvider.ReadFile();
+			var results = fileStorageProvider.ReadEntities();
 			Assert.AreEqual(0, results.Count());
 		}
 
@@ -70,7 +70,7 @@ namespace Filebase.Tests
 		{
 			SetupFile(string.Empty);
 
-			var results = await fileStorageProvider.ReadFileAsync();
+			var results = await fileStorageProvider.ReadEntitiesAsync();
 			Assert.AreEqual(0, results.Count());
 		}
 
@@ -83,7 +83,7 @@ namespace Filebase.Tests
 				new TestEntity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			var results = fileStorageProvider.ReadFile();
+			var results = fileStorageProvider.ReadEntities();
 			Assert.AreEqual(2, results.Count());
 
 			Assert.IsTrue(results.ContainsKey("one"));
@@ -109,7 +109,7 @@ namespace Filebase.Tests
 				new TestEntity { CompoundProp = null, Id = "two", IntProp = 2 }
 			});
 
-			var results = await fileStorageProvider.ReadFileAsync();
+			var results = await fileStorageProvider.ReadEntitiesAsync();
 			Assert.AreEqual(2, results.Count());
 
 			Assert.IsTrue(results.ContainsKey("one"));
@@ -128,14 +128,14 @@ namespace Filebase.Tests
 
 		#endregion
 
-		#region WriteFile tests
+		#region WriteEntities tests
 
 		[Test]
 		public void WriteFile_when_file_doesnt_exist_should_create_it()
 		{
 			var records = new Dictionary<string, TestEntity> { { "one", new TestEntity { Id = "one", IntProp = 1 } } };
 
-			fileStorageProvider.WriteFile(records);
+			fileStorageProvider.WriteEntities(records);
 			var fileInfo = new FileInfo(filePath);
 			Assert.IsTrue(fileInfo.Exists);
 		}
@@ -145,7 +145,7 @@ namespace Filebase.Tests
 		{
 			var records = new Dictionary<string, TestEntity> { { "one", new TestEntity { Id = "one", IntProp = 1 } } };
 
-			await fileStorageProvider.WriteFileAsync(records);
+			await fileStorageProvider.WriteEntitiesAsync(records);
 			var fileInfo = new FileInfo(filePath);
 			Assert.IsTrue(fileInfo.Exists);
 		}
@@ -159,7 +159,7 @@ namespace Filebase.Tests
 					{ "two", new TestEntity { Id = "two", IntProp = 2, CompoundProp = new TestEntity { Id = "two-one", IntProp = 21 } } }
 				};
 
-			fileStorageProvider.WriteFile(records);
+			fileStorageProvider.WriteEntities(records);
 
 			var fileInfo = new FileInfo(filePath);
 
@@ -182,7 +182,7 @@ namespace Filebase.Tests
 					{ "two", new TestEntity { Id = "two", IntProp = 2, CompoundProp = new TestEntity { Id = "two-one", IntProp = 21 } } }
 				};
 
-			await fileStorageProvider.WriteFileAsync(records);
+			await fileStorageProvider.WriteEntitiesAsync(records);
 
 			var fileInfo = new FileInfo(filePath);
 
@@ -207,7 +207,7 @@ namespace Filebase.Tests
 			var fileInfo = new FileInfo(filePath);
 			Assert.IsTrue(fileInfo.Exists);
 
-			fileStorageProvider.WriteFile(new Dictionary<string, TestEntity>());
+			fileStorageProvider.WriteEntities(new Dictionary<string, TestEntity>());
 
 			fileInfo.Refresh();
 			Assert.IsFalse(fileInfo.Exists);
@@ -224,7 +224,7 @@ namespace Filebase.Tests
 			var fileInfo = new FileInfo(filePath);
 			Assert.IsTrue(fileInfo.Exists);
 
-			await fileStorageProvider.WriteFileAsync(new Dictionary<string, TestEntity>());
+			await fileStorageProvider.WriteEntitiesAsync(new Dictionary<string, TestEntity>());
 
 			fileInfo.Refresh();
 			Assert.IsFalse(fileInfo.Exists);
@@ -245,10 +245,10 @@ namespace Filebase.Tests
 
 			var recordsDict = records.ToDictionary(r => r.Id);
 
-			var t1 = fileStorageProvider.ReadFileAsync().ContinueWith(_ => Debug.WriteLine("t1 completed"));
-			var t2 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t2 completed"));
-			var t3 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t3 completed"));
-			var t4 = fileStorageProvider.WriteFileAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t4 completed"));
+			var t1 = fileStorageProvider.ReadEntitiesAsync().ContinueWith(_ => Debug.WriteLine("t1 completed"));
+			var t2 = fileStorageProvider.WriteEntitiesAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t2 completed"));
+			var t3 = fileStorageProvider.WriteEntitiesAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t3 completed"));
+			var t4 = fileStorageProvider.WriteEntitiesAsync(recordsDict).ContinueWith(_ => Debug.WriteLine("t4 completed"));
 
 			await Task.WhenAll(t1, t2, t3, t4);
 
@@ -269,9 +269,9 @@ namespace Filebase.Tests
 			var recordsDict = records.ToDictionary(r => r.Id);
 
 			var t1 = HoldFileOpen(FileAccess.Read, FileShare.Read).ContinueWith(_ => Debug.WriteLine("t1 completed"));
-			var t2 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t2 completed"));
-			var t3 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t3 completed"));
-			var t4 = Task.Run(() => fileStorageProvider.WriteFile(recordsDict)).ContinueWith(_ => Debug.WriteLine("t4 completed"));
+			var t2 = Task.Run(() => fileStorageProvider.WriteEntities(recordsDict)).ContinueWith(_ => Debug.WriteLine("t2 completed"));
+			var t3 = Task.Run(() => fileStorageProvider.WriteEntities(recordsDict)).ContinueWith(_ => Debug.WriteLine("t3 completed"));
+			var t4 = Task.Run(() => fileStorageProvider.WriteEntities(recordsDict)).ContinueWith(_ => Debug.WriteLine("t4 completed"));
 
 			await Task.WhenAll(t1, t2);
 

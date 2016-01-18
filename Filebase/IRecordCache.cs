@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace Filebase
+﻿namespace Filebase
 {
 	internal interface IRecordCache<T>
 	{

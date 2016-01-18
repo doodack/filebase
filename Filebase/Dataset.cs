@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -10,25 +9,22 @@ namespace Filebase
 	/// Provides methods for CRUD operations against a Filebase data.
 	/// </summary>
 	/// <typeparam name="T">Type of objects this data set is for.</typeparam>
-	public class FilebaseDataset<T> where T : class
+	public class Dataset<T> where T : class
 	{
 		private readonly Func<T, string> _idExtractor;
 
 		private readonly IRecordCache<IDictionary<string, T>> _localRecords;
 
 		/// <summary>
-		/// Initializes a new instance of the <see cref="FilebaseDataset{T}"/> class.
+		/// Initializes a new instance of the <see cref="Dataset{T}"/> class.
 		/// </summary>
-		/// <param name="name">The name of the data set.</param>
-		/// <param name="context">The associated <see cref="FilebaseContext"/> instance.</param>
+		/// <param name="storageProvider">The persistent storage provider.</param>
 		/// <param name="idExtractor">The function that extracts an id from a record.</param>
-		public FilebaseDataset(string name, FilebaseContext context, Func<T, string> idExtractor)
+		internal Dataset(IPersistentStorageProvider<T> storageProvider, Func<T, string> idExtractor)
 		{
 			_idExtractor = idExtractor;
 			_localRecords = new LocalRecordCache<IDictionary<string, T>>();
-
-			var backingFilePath = Path.Combine(context.RootDirectory.FullName, name + ".json");
-			FileStorageProvider = new FileStorageProvider<T>(new FileInfo(backingFilePath));
+			FileStorageProvider = storageProvider;
 		}
 
 		/// <summary>
@@ -38,24 +34,24 @@ namespace Filebase
 		/// </summary>
 		public bool IsVolatile { get; set; } = true;
 
-		internal IFileStorageProvider<T> FileStorageProvider { get; set; }
+		internal IPersistentStorageProvider<T> FileStorageProvider { get; }
 
 		/// <summary>
 		/// Gets all records from the set.
 		/// </summary>
-		public IEnumerable<T> GetAll()
+		public IReadOnlyCollection<T> GetAll()
 		{
 			var records = GetRecords();
-			return records?.Values ?? Enumerable.Empty<T>();
+			return records?.Values.ToArray() ?? new T[0];
 		}
 
 		/// <summary>
 		/// Gets all records from the set. This method is asynchronous.
 		/// </summary>
-		public async Task<IEnumerable<T>> GetAllAsync()
+		public async Task<IReadOnlyCollection<T>> GetAllAsync()
 		{
 			var records = await GetRecordsAsync();
-			return records?.Values ?? Enumerable.Empty<T>();
+			return records?.Values.ToArray() ?? new T[0];
 		}
 
 		/// <summary>
@@ -142,7 +138,7 @@ namespace Filebase
 				return _localRecords.GetCachedData();
 			}
 
-			var records = FileStorageProvider.ReadFile();
+			var records = FileStorageProvider.ReadEntities();
 			
 			if (!IsVolatile)
 			{
@@ -159,7 +155,7 @@ namespace Filebase
 				return _localRecords.GetCachedData();
 			}
 
-			var records = await FileStorageProvider.ReadFileAsync();
+			var records = await FileStorageProvider.ReadEntitiesAsync();
 
 			if (!IsVolatile)
 			{
@@ -176,7 +172,7 @@ namespace Filebase
 				_localRecords.UpdateCachedData(records);
 			}
 
-			FileStorageProvider.WriteFile(records);
+			FileStorageProvider.WriteEntities(records);
 		}
 
 		private async Task PersistRecordsAsync(IDictionary<string, T> records)
@@ -186,7 +182,7 @@ namespace Filebase
 				_localRecords.UpdateCachedData(records);
 			}
 			
-			await FileStorageProvider.WriteFileAsync(records);
+			await FileStorageProvider.WriteEntitiesAsync(records);
 		}
 	}
 }

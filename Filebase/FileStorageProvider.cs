@@ -9,7 +9,7 @@ using Newtonsoft.Json;
 
 namespace Filebase
 {
-	internal class FileStorageProvider<T> : IFileStorageProvider<T>
+	internal class FileStorageProvider<T> : IPersistentStorageProvider<T>
 	{
 		private static readonly TimeSpan FileAccessTimeout = TimeSpan.FromSeconds(30);
 
@@ -31,7 +31,7 @@ namespace Filebase
 			}
 		}
 
-		public IDictionary<string, T> ReadFile()
+		public IDictionary<string, T> ReadEntities()
 		{
 			if (!BackingFileExists)
 			{
@@ -47,7 +47,7 @@ namespace Filebase
 			return DeserializeRecords(json);
 		}
 
-		public async Task<IDictionary<string, T>> ReadFileAsync()
+		public async Task<IDictionary<string, T>> ReadEntitiesAsync()
 		{
 			if (!BackingFileExists)
 			{
@@ -63,7 +63,7 @@ namespace Filebase
 			return DeserializeRecords(json);
 		}
 
-		public void WriteFile(IDictionary<string, T> records)
+		public void WriteEntities(IDictionary<string, T> records)
 		{
 			var newJson = PrepareDataToWrite(records);
 			if (newJson == null)
@@ -77,7 +77,7 @@ namespace Filebase
 			}
 		}
 
-		public async Task WriteFileAsync(IDictionary<string, T> records)
+		public async Task WriteEntitiesAsync(IDictionary<string, T> records)
 		{
 			var newJson = PrepareDataToWrite(records);
 			if (newJson == null)
