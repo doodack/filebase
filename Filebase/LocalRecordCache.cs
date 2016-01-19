@@ -2,26 +2,23 @@
 {
 	internal class LocalRecordCache<T> : IRecordCache<T> where T : class
 	{
-		private T cache;
+		private T _cache;
 		
-		public bool HasCachedData
-		{
-			get { return cache != null; }
-		}
+		public bool HasCachedData => _cache != null;
 
 		public T GetCachedData()
 		{
-			return cache;
+			return _cache;
 		}
 
 		public void UpdateCachedData(T data)
 		{
-			cache = data;
+			_cache = data;
 		}
 
 		public void ClearCache()
 		{
-			cache = null;
+			_cache = null;
 		}
 	}
 }

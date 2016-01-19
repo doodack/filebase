@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace Filebase
@@ -42,7 +41,7 @@ namespace Filebase
 		public IReadOnlyCollection<T> GetAll()
 		{
 			var records = GetRecords();
-			return records?.Values.ToArray() ?? new T[0];
+			return (IReadOnlyCollection<T>)records?.Values ?? new T[0];
 		}
 
 		/// <summary>
@@ -51,7 +50,7 @@ namespace Filebase
 		public async Task<IReadOnlyCollection<T>> GetAllAsync()
 		{
 			var records = await GetRecordsAsync();
-			return records?.Values.ToArray() ?? new T[0];
+			return (IReadOnlyCollection<T>)records?.Values ?? new T[0];
 		}
 
 		/// <summary>

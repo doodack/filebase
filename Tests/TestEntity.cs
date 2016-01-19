@@ -1,7 +1,20 @@
+#pragma warning disable 0659
+
 namespace Filebase.Tests
 {
 	public class TestEntity
 	{
+		public TestEntity()
+		{
+		}
+
+		public TestEntity(string id, int prop, TestEntity compound = null)
+		{
+			Id = id;
+			IntProp = prop;
+			CompoundProp = compound;
+		}
+
 		public string Id { get; set; }
 
 		public int IntProp { get; set; }
