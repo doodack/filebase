@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Moq;
 using NUnit.Framework;
@@ -155,11 +157,131 @@ namespace Filebase.Tests
 			await _dataset.GetAllAsync();
 			var newEntity = new TestEntity("42", 42);
 			_testEntities.Add(newEntity);
-			_storageMock.Setup(s => s.ReadEntities()).Returns(_testEntities.ToDictionary(e => e.Id));
+			_storageMock.Setup(s => s.ReadEntitiesAsync()).ReturnsAsync(_testEntities.ToDictionary(e => e.Id));
 
 			var objects = await _dataset.GetAllAsync();
 			Assert.AreEqual(4, objects.Count);
 			CollectionAssert.Contains(objects, newEntity);
+		}
+
+		#endregion
+
+		#region AddOrUpdate
+
+		[Test]
+		public void Given_new_entity_AddOrUpdate_should_add_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 4 && t.ContainsKey("42") && t["42"].IntProp == 42;
+
+			_storageMock.Setup(s => s.WriteEntities(It.Is(callPredicate))).Verifiable();
+			_dataset.AddOrUpdate(new TestEntity("42", 42));
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public async Task Given_new_entity_AddOrUpdateAsync_should_add_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 4 && t.ContainsKey("42") && t["42"].IntProp == 42;
+
+			_storageMock.Setup(s => s.WriteEntitiesAsync(It.Is(callPredicate))).Returns(Task.FromResult(0)).Verifiable();
+			await _dataset.AddOrUpdateAsync(new TestEntity("42", 42));
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public void Given_existing_entity_AddOrUpdate_should_update_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 3 && t.ContainsKey("2") && t["2"].IntProp == 24;
+
+			_storageMock.Setup(s => s.WriteEntities(It.Is(callPredicate))).Verifiable();
+			_dataset.AddOrUpdate(new TestEntity("2", 24));
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public async Task Given_existing_entity_AddOrUpdateAsync_should_update_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 3 && t.ContainsKey("2") && t["2"].IntProp == 24;
+
+			_storageMock.Setup(s => s.WriteEntitiesAsync(It.Is(callPredicate))).Returns(Task.FromResult(0)).Verifiable();
+			await _dataset.AddOrUpdateAsync(new TestEntity("2", 24));
+			_storageMock.Verify();
+		}
+
+		[Test, ExpectedException(typeof(ArgumentNullException))]
+		public void Given_null_AddOrUpdate_should_throw_ArgumentNullException()
+		{
+			_dataset.AddOrUpdate(null);
+		}
+
+		[Test, ExpectedException(typeof(ArgumentNullException))]
+		public async Task Given_null_AddOrUpdateAsync_should_throw_ArgumentNullException()
+		{
+			await _dataset.AddOrUpdateAsync(null);
+		}
+
+		#endregion
+
+		#region Delete
+
+		[Test]
+		public void Given_existing_id_Delete_should_remove_an_entity_identified_by_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 2 && !t.ContainsKey("2");
+
+			_storageMock.Setup(s => s.WriteEntities(It.Is(callPredicate))).Verifiable();
+			_dataset.Delete("2");
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public async Task Given_existing_id_DeleteAsync_should_remove_an_entity_identified_by_it()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 2 && !t.ContainsKey("2");
+
+			_storageMock.Setup(s => s.WriteEntitiesAsync(It.Is(callPredicate))).Returns(Task.FromResult(0)).Verifiable();
+			await _dataset.DeleteAsync("2");
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public void Given_nonexistent_id_Delete_should_do_nothing()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 3;
+
+			_storageMock.Setup(s => s.WriteEntities(It.Is(callPredicate))).Verifiable();
+			_dataset.Delete("42");
+			_storageMock.Verify();
+		}
+
+		[Test]
+		public async Task Given_nonexistent_id_DeleteAsync_should_do_nothing()
+		{
+			Expression<Func<IDictionary<string, TestEntity>, bool>> callPredicate =
+				t => t.Count == 3;
+
+			_storageMock.Setup(s => s.WriteEntitiesAsync(It.Is(callPredicate))).Returns(Task.FromResult(0)).Verifiable();
+			await _dataset.DeleteAsync("42");
+			_storageMock.Verify();
+		}
+
+		[Test, ExpectedException(typeof(ArgumentNullException))]
+		public void Given_null_Delete_should_throw_ArgumentNullException()
+		{
+			_dataset.Delete(null);
+		}
+
+		[Test, ExpectedException(typeof(ArgumentNullException))]
+		public async Task Given_null_DeleteAsync_should_throw_ArgumentNullException()
+		{
+			await _dataset.DeleteAsync(null);
 		}
 
 		#endregion

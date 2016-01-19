@@ -83,6 +83,11 @@ namespace Filebase
 		/// <param name="record">Record to add or update.</param>
 		public void AddOrUpdate(T record)
 		{
+			if (record == null)
+			{
+				throw new ArgumentNullException(nameof(record));
+			}
+
 			var records = GetRecords();
 			var id = _idExtractor(record);
 			records[id] = record;
@@ -94,6 +99,11 @@ namespace Filebase
 		/// </summary>
 		public async Task AddOrUpdateAsync(T record)
 		{
+			if (record == null)
+			{
+				throw new ArgumentNullException(nameof(record));
+			}
+
 			var records = await GetRecordsAsync();
 			var id = _idExtractor(record);
 			records[id] = record;
@@ -106,6 +116,11 @@ namespace Filebase
 		/// <param name="id">Id of the record to delete.</param>
 		public void Delete(string id)
 		{
+			if (id == null)
+			{
+				throw new ArgumentNullException(nameof(id));
+			}
+
 			var records = GetRecords();
 			if (records.ContainsKey(id))
 			{
@@ -121,6 +136,11 @@ namespace Filebase
 		/// <param name="id">Id of the record to delete.</param>
 		public async Task DeleteAsync(string id)
 		{
+			if (id == null)
+			{
+				throw new ArgumentNullException(nameof(id));
+			}
+
 			var records = await GetRecordsAsync();
 			if (records.ContainsKey(id))
 			{
