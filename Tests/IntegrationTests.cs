@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NUnit.Framework;
 
@@ -50,6 +53,80 @@ namespace Filebase.Tests
 			Assert.True(parsed.ContainsKey("id:21"));
 			Assert.AreEqual(4242, parsed["id:42"].IntProp);
 			Assert.AreEqual("42", parsed["id:42"].Id);
+		}
+
+		[Test]
+		public void Given_multiple_datasets_sync_methods_should_work_properly()
+		{ 
+			var result = Parallel.For(0, 100, DoWork);
+			
+			Assert.True(result.IsCompleted);
+			var parsed = GetParsedFile();
+			Assert.AreEqual(100, parsed.Count);
+		}
+
+		[Test]
+		public async Task Given_multiple_datasets_async_methods_should_work_properly()
+		{
+			var tasks = new List<Task>(100);
+
+			for (int i = 0; i < 100; ++i)
+			{
+				var workerIndex = i;
+				tasks.Add(DoWorkAsync(workerIndex));
+			}
+
+			await Task.WhenAll(tasks);
+
+			var parsed = GetParsedFile();
+			Assert.AreEqual(100, parsed.Count);
+		}
+
+		private void DoWork(int workerIndex)
+		{
+			var factory = new DatasetFactory();
+			var dataset = factory.Create<TestEntity>(filePath, t => t.Id);
+			dataset.IsVolatile = true;
+
+			var tempItemId = workerIndex + "-toDelete";
+
+			dataset.AddOrUpdate(new TestEntity(tempItemId, workerIndex));
+			var tempItem = dataset.GetById(tempItemId);
+			Assert.NotNull(tempItem);
+			dataset.AddOrUpdate(new TestEntity(workerIndex.ToString(), workerIndex));
+			dataset.Delete(tempItemId);
+			tempItem = dataset.GetById(tempItemId);
+			Assert.Null(tempItem);
+		}
+
+		private async Task DoWorkAsync(int workerIndex)
+		{
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: starting");
+
+			var factory = new DatasetFactory();
+			var dataset = factory.Create<TestEntity>(filePath, t => t.Id);
+			dataset.IsVolatile = true;
+
+			var tempItemId = workerIndex + "-toDelete";
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: adding test entity");
+			await dataset.AddOrUpdateAsync(new TestEntity(tempItemId, workerIndex));
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: getting test entity");
+			var tempItem = dataset.GetById(tempItemId);
+			Assert.NotNull(tempItem);
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: adding second entity");
+			await dataset.AddOrUpdateAsync(new TestEntity(workerIndex.ToString(), workerIndex));
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: deleting test entity");
+			await dataset.DeleteAsync(tempItemId);
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: getting deleted test entity");
+			tempItem = await dataset.GetByIdAsync(tempItemId);
+			Assert.Null(tempItem);
+
+			Debug.WriteLine($"{DateTime.Now.ToLongTimeString()} WORKER {workerIndex}: done");
 		}
 
 		private string GetFileContents()

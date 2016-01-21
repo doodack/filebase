@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -14,6 +16,8 @@ namespace Filebase
 		private static readonly TimeSpan FileAccessTimeout = TimeSpan.FromSeconds(30);
 
 		private static readonly TimeSpan LockedFileRetryInterval = TimeSpan.FromMilliseconds(50);
+
+		private static ConcurrentQueue<Func<Task>> fileAccessQueue = new ConcurrentQueue<Func<Task>>();
 
 		private readonly FileInfo _backingFile;
 
@@ -33,6 +37,8 @@ namespace Filebase
 
 		public IDictionary<string, T> ReadEntities()
 		{
+			fileAccessQueue.Enqueue(ReadEntitiesAsync);
+
 			if (!BackingFileExists)
 			{
 				return new Dictionary<string, T>();
@@ -116,13 +122,13 @@ namespace Filebase
 
 		private StreamWriter OpenStreamWriter()
 		{
-			var fs = OpenFile(FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+			var fs = OpenFile(FileMode.Create, FileAccess.Write, FileShare.None);
 			return new StreamWriter(fs);
 		}
 
 		private async Task<StreamWriter> OpenStreamWriterAsync()
 		{
-			var fs = await OpenFileAsync(FileMode.OpenOrCreate, FileAccess.Write, FileShare.None);
+			var fs = await OpenFileAsync(FileMode.Create, FileAccess.Write, FileShare.None);
 			return new StreamWriter(fs);
 		}
 
@@ -171,6 +177,7 @@ namespace Filebase
 				}
 				catch (IOException ioex)
 				{
+					Debug.WriteLine("Got IOException");
 					if (!IsFileLocked(ioex) || IsTimeoutExceeded(firstTryTime))
 					{
 						throw;

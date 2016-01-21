@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
+using Nito.AsyncEx;
 
 namespace Filebase
 {
@@ -13,6 +15,8 @@ namespace Filebase
 		private readonly Func<T, string> _idExtractor;
 
 		private readonly IRecordCache<IDictionary<string, T>> _localRecords;
+
+		private static AsyncReaderWriterLock sync = new AsyncReaderWriterLock();
 
 		/// <summary>
 		/// Initializes a new instance of the <see cref="Dataset{T}"/> class.
@@ -83,15 +87,18 @@ namespace Filebase
 		/// <param name="record">Record to add or update.</param>
 		public void AddOrUpdate(T record)
 		{
-			if (record == null)
+			using (sync.WriterLock())
 			{
-				throw new ArgumentNullException(nameof(record));
-			}
+				if (record == null)
+				{
+					throw new ArgumentNullException(nameof(record));
+				}
 
-			var records = GetRecords();
-			var id = _idExtractor(record);
-			records[id] = record;
-			PersistRecords(records);
+				var records = GetRecords(false);
+				var id = _idExtractor(record);
+				records[id] = record;
+				PersistRecords(records);
+			}
 		}
 
 		/// <summary>
@@ -99,15 +106,18 @@ namespace Filebase
 		/// </summary>
 		public async Task AddOrUpdateAsync(T record)
 		{
-			if (record == null)
+			using (await sync.WriterLockAsync())
 			{
-				throw new ArgumentNullException(nameof(record));
-			}
+				if (record == null)
+				{
+					throw new ArgumentNullException(nameof(record));
+				}
 
-			var records = await GetRecordsAsync();
-			var id = _idExtractor(record);
-			records[id] = record;
-			await PersistRecordsAsync(records);
+				var records = await GetRecordsAsync(false);
+				var id = _idExtractor(record);
+				records[id] = record;
+				await PersistRecordsAsync(records);
+			}
 		}
 
 		/// <summary>
@@ -116,18 +126,21 @@ namespace Filebase
 		/// <param name="id">Id of the record to delete.</param>
 		public void Delete(string id)
 		{
-			if (id == null)
+			using (sync.WriterLock())
 			{
-				throw new ArgumentNullException(nameof(id));
-			}
+				if (id == null)
+				{
+					throw new ArgumentNullException(nameof(id));
+				}
 
-			var records = GetRecords();
-			if (records.ContainsKey(id))
-			{
-				records.Remove(id);
-			}
+				var records = GetRecords(false);
+				if (records.ContainsKey(id))
+				{
+					records.Remove(id);
+				}
 
-			PersistRecords(records);
+				PersistRecords(records);
+			}
 		}
 
 		/// <summary>
@@ -136,52 +149,86 @@ namespace Filebase
 		/// <param name="id">Id of the record to delete.</param>
 		public async Task DeleteAsync(string id)
 		{
-			if (id == null)
+			using (await sync.WriterLockAsync())
 			{
-				throw new ArgumentNullException(nameof(id));
-			}
+				if (id == null)
+				{
+					throw new ArgumentNullException(nameof(id));
+				}
 
-			var records = await GetRecordsAsync();
-			if (records.ContainsKey(id))
-			{
-				records.Remove(id);
-			}
+				var records = await GetRecordsAsync(false);
+				if (records.ContainsKey(id))
+				{
+					records.Remove(id);
+				}
 
-			await PersistRecordsAsync(records);
+				await PersistRecordsAsync(records);
+			}
 		}
 
-		private IDictionary<string, T> GetRecords()
+		private IDictionary<string, T> GetRecords(bool lockRequired = true)
 		{
-			if (!IsVolatile && _localRecords.HasCachedData)
+			IDisposable syncLock = null;
+			if (lockRequired)
 			{
-				return _localRecords.GetCachedData();
+				syncLock = sync.ReaderLock();
 			}
 
-			var records = FileStorageProvider.ReadEntities();
-			
-			if (!IsVolatile)
+			try
 			{
-				_localRecords.UpdateCachedData(records);
-			}
+				if (!IsVolatile && _localRecords.HasCachedData)
+				{
+					return _localRecords.GetCachedData();
+				}
 
-			return records;
+				var records = FileStorageProvider.ReadEntities();
+
+				if (!IsVolatile)
+				{
+					_localRecords.UpdateCachedData(records);
+				}
+
+				return records;
+			}
+			finally
+			{
+				if (lockRequired)
+				{
+					syncLock.Dispose();
+				}
+			}
 		}
 
-		private async Task<IDictionary<string, T>> GetRecordsAsync()
+		private async Task<IDictionary<string, T>> GetRecordsAsync(bool lockRequired = true)
 		{
-			if (!IsVolatile && _localRecords.HasCachedData)
+			IDisposable syncLock = null;
+			if (lockRequired)
 			{
-				return _localRecords.GetCachedData();
+				syncLock = await sync.ReaderLockAsync();
 			}
 
-			var records = await FileStorageProvider.ReadEntitiesAsync();
+			try {
+				if (!IsVolatile && _localRecords.HasCachedData)
+				{
+					return _localRecords.GetCachedData();
+				}
 
-			if (!IsVolatile)
-			{
-				_localRecords.UpdateCachedData(records);
+				var records = await FileStorageProvider.ReadEntitiesAsync();
+
+				if (!IsVolatile)
+				{
+					_localRecords.UpdateCachedData(records);
+				}
+
+				return records;
 			}
-
-			return records;
+			finally
+			{
+				if (lockRequired)
+				{
+					syncLock.Dispose();
+				}
+			}
 		}
 
 		private void PersistRecords(IDictionary<string, T> records)
